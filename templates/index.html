@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/index.css">
+    <title>Resume Analyzer</title>
+</head>
+<body>
+    <h2>AI Resume Analyzer & Career Recommendation System</h2>
+
+    <div class="result">
+        <h3>How it works</h3>
+        <p>
+            This system uses Natural Language Processing (TF-IDF) and Machine Learning 
+            (Logistic Regression) to classify resumes and recommend relevant job roles.
+        </p>
+    </div>
+
+    <form action="/predict" method="post">
+        <textarea name="resume_text" rows="15" cols="80" placeholder="Paste resume text here..."></textarea><br><br>
+        <button type="submit">Analyze</button>
+    </form>
+    {% if error %}
+        <p style="color: red;">{{ error }}</p>
+    {% endif %}
+    {% if prediction %}
+        <h3>Prediction: {{ prediction }}</h3>
+        <h4>Confidence: {{ confidence }}</h4>
+    {% endif %}
+
+    {% if jobs %}
+    <h3>Recommended Jobs:</h3>
+    <ul>
+        {% for job in jobs %}
+            <li>
+                <b>{{ job['Job Title'] }}</b> at {{ job['Company'] }} ({{ job['Location'] }})
+            </li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+</body>
+</html>
