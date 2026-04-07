@@ -24,9 +24,12 @@
     {% if error %}
         <p style="color: red;">{{ error }}</p>
     {% endif %}
+    
     {% if prediction %}
-        <h3>Prediction: {{ prediction }}</h3>
-        <h4>Confidence: {{ confidence }}</h4>
+        <div class="result">
+            <h3>Prediction: {{ prediction }}</h3>
+            <h4>Confidence: {{ confidence }}</h4>
+        </div>
     {% endif %}
 
     {% if jobs %}

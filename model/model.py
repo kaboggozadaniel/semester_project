@@ -5,23 +5,37 @@ from pathlib import Path
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, classification_report
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
 from sklearn.pipeline import Pipeline
+
 
 BASE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = BASE_DIR.parent
 DATA_PATH = PROJECT_ROOT / "data" / "Resume.csv"
 
-# Load and clean data
+
 df = pd.read_csv(DATA_PATH)
 df = df.dropna(subset=['Resume_str', 'Category'])
 
 
 def clean_data(text: str) -> str:
     text = str(text).lower()
+
+    # keep useful technical characters
     text = re.sub(r'[^a-z0-9\+\#\&\-/\. ]', ' ', text)
     text = re.sub(r'\s+', ' ', text)
+
+  
+    tech_keywords = [
+        'python', 'java', 'sql', 'react', 'api',
+        'machine learning', 'data science', 'backend', 'frontend'
+    ]
+
+    for word in tech_keywords:
+        if word in text:
+            text += ' ' + (word + ' ') * 3
+
     return text.strip()
 
 
@@ -39,14 +53,15 @@ df = df[['clean_resume', 'Category']]
 X = df['clean_resume']
 y = df['Category']
 
+
 pipeline = Pipeline([
     (
         'tfidf',
         TfidfVectorizer(
             stop_words='english',
-            ngram_range=(1, 2),
-            max_features=12000,
-            min_df=2,
+            ngram_range=(1, 3),       
+            max_features=8000,       
+            min_df=3,                 
             max_df=0.85,
             sublinear_tf=True,
             token_pattern=r'(?u)\b[\w\+\#\&\-/\.]+\b',
@@ -64,14 +79,18 @@ pipeline = Pipeline([
     ),
 ])
 
+
 print('Dataset shape:', df.shape)
 print('Number of classes:', y.nunique())
-print('Class counts:')
-print(y.value_counts().sort_values(ascending=False).head(20))
+print('\nTop class counts:')
+print(y.value_counts().head(10))
+
 
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 cv_scores = cross_val_score(pipeline, X, y, cv=cv, scoring='accuracy', n_jobs=1)
-print(f'Cross-validation accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}')
+
+print(f'\nCross-validation accuracy: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}')
+
 
 X_train, X_test, y_train, y_test = train_test_split(
     X,
@@ -81,13 +100,30 @@ X_train, X_test, y_train, y_test = train_test_split(
     stratify=y,
 )
 
+
 pipeline.fit(X_train, y_train)
 
 preds = pipeline.predict(X_test)
+probs = pipeline.predict_proba(X_test)
+
 accuracy = accuracy_score(y_test, preds)
-print(f'Test set accuracy: {accuracy:.4f}')
+print(f'\nTest set accuracy: {accuracy:.4f}')
+
 print('\nClassification report:')
 print(classification_report(y_test, preds, zero_division=0))
+
+
+print('\nConfusion Matrix:')
+print(confusion_matrix(y_test, preds))
+
+
+print('\nSample Predictions:\n')
+for i in range(5):
+    print(f"Actual: {y_test.iloc[i]}")
+    print(f"Predicted: {preds[i]}")
+    print(f"Confidence: {max(probs[i]):.3f}")
+    print("------")
+
 
 vectorizer = pipeline.named_steps['tfidf']
 model = pipeline.named_steps['clf']
