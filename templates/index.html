@@ -7,41 +7,129 @@
     <title>Resume Analyzer</title>
 </head>
 <body>
-    <h2>AI Resume Analyzer & Career Recommendation System</h2>
+    <main class="page-shell">
+        <section class="hero-card">
+            <div class="hero-copy">
+                <h1>Resume Analyzer and Job Recommendation System (92400566001 Kaboggoza Daniel Mini project)</h1>
+                <p class="hero-text">
+                    Upload or paste a resume, extract key skills, predict the strongest job track.
+                </p>
+                <div class="hero-metrics">
+                    <div class="metric">
+                        <span class="metric-value">TF-IDF</span>
+                        <span class="metric-label">Resume feature extraction</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">ML</span>
+                        <span class="metric-label">Role prediction</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-value">Jobs</span>
+                        <span class="metric-label">Job recommendation</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-note card">
+                <h2>How it works</h2>
+                <p>
+                    This project uses Natural Language Processing and a trained machine learning model
+                    to classify resume content and bring relevant job suggestions.
+                </p>
+            </div>
+        </section>
 
-    <div class="result">
-        <h3>How it works</h3>
-        <p>
-            This system uses Natural Language Processing (TF-IDF) and Machine Learning 
-            (Logistic Regression) to classify resumes and recommend relevant job roles.
-        </p>
-    </div>
+        <section class="content-grid">
+            <section class="card input-panel">
+                <div class="section-heading">
+                    <h2>Analyze Resume</h2>
+                    <p>Paste your resume text or upload a file to generate a prediction.</p>
+                </div>
 
-    <form action="/predict" method="post">
-        <textarea name="resume_text" rows="15" cols="80" placeholder="Paste resume text here..."></textarea><br><br>
-        <button type="submit">Analyze</button>
-    </form>
-    {% if error %}
-        <p style="color: red;">{{ error }}</p>
-    {% endif %}
-    
-    {% if prediction %}
-        <div class="result">
-            <h3>Prediction: {{ prediction }}</h3>
-            <h4>Confidence: {{ confidence }}</h4>
-        </div>
-    {% endif %}
+                <form action="/predict" method="post" enctype="multipart/form-data" class="analyzer-form">
+                    <label class="field-label" for="resume_text">Resume Text</label>
+                    <textarea id="resume_text" name="resume_text" rows="14" placeholder="Paste resume text here..."></textarea>
 
-    {% if jobs %}
-    <h3>Recommended Jobs:</h3>
-    <ul>
-        {% for job in jobs %}
-            <li>
-                <b>{{ job['Job Title'] }}</b> at {{ job['Company'] }} ({{ job['Location'] }})
-            </li>
-        {% endfor %}
-    </ul>
-    {% endif %}
+                    <div class="upload-row">
+                        <div>
+                            <label class="field-label" for="file">Resume File</label>
+                            <p class="field-help">Accepted formats: PDF, DOC, DOCX, TXT</p>
+                        </div>
+                        <input id="file" type="file" name="file" accept=".pdf,.doc,.docx,.txt">
+                    </div>
 
+                    <button type="submit">Analyze Resume</button>
+                </form>
+
+                {% if error %}
+                    <div class="alert-error">{{ error }}</div>
+                {% endif %}
+            </section>
+
+            <section class="results-panel">
+                {% if prediction %}
+                    <div class="card result-card">
+                        <div class="section-heading">
+                            <h2>Prediction</h2>
+                            <p>Best-fit role based on your resume content.</p>
+                        </div>
+                        <div class="prediction-row">
+                            <div class="prediction-badge">{{ prediction }}</div>
+                            <div class="confidence-container">
+                                <div class="confidence-label">Confidence: {{ confidence }}</div>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: {{ confidence }}"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if keywords %}
+                    <div class="card result-card">
+                        <div class="section-heading">
+                            <h2>Detected Skills</h2>
+                            <p>Keywords identified directly from the submitted resume.</p>
+                        </div>
+                        <div class="keywords">
+                            {% for word in keywords %}
+                                <span class="tag">{{ word }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if jobs %}
+                    <div class="card result-card">
+                        <div class="section-heading">
+                            <h2>Recommended Jobs</h2>
+                            <p>Relevant roles based on the predicted career path.</p>
+                        </div>
+                        <div class="jobs-grid">
+                            {% for job in jobs %}
+                                <article class="job-card">
+                                    <div class="job-top">
+                                        <div>
+                                            <h3>{{ job['title'] }}</h3>
+                                            <p class="job-company">{{ job['company'] }}</p>
+                                        </div>
+                                        <span class="job-source">{{ job['source'] }}</span>
+                                    </div>
+                                    <div class="job-meta">
+                                        <span>{{ job['location'] }}</span>
+                                        <span>{{ job['date_posted'] }}</span>
+                                        <span>{{ job['work_type'] }}</span>
+                                        <span>{{ job['employment_type'] }}</span>
+                                    </div>
+                                    <a class="job-link" href="{{ job['link'] }}" target="_blank" rel="noopener noreferrer">
+                                        View job
+                                    </a>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            </section>
+        </section>
+    </main>
 </body>
 </html>

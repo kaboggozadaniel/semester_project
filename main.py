@@ -1,27 +1,23 @@
-from typing import Optional
-
-from fastapi import FastAPI, Request, Form
+from fastapi import FastAPI, Request, Form, UploadFile, File
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from typing import Optional
+
+import PyPDF2
+import docx
+import io
 
 import pickle
 import re
 
 from modules.utils import clean_data, trim_resume
+from modules.keyword_extract import extract_keywords
+from modules.file_handler import extract_text_from_file
 from modules.jobs import get_job_recommendations
+from model.predict import predict_resume
 
 app = FastAPI()
-
-# model 
-with open('model.pkl', 'rb') as f:
-    model = pickle.load(f)
-
-# vectorizer
-with open('vectorizer.pkl', 'rb') as f:
-    vectorizer = pickle.load(f)
-
-# template
 templates = Jinja2Templates(directory="templates")
 templates.env.cache = None
 
@@ -33,7 +29,17 @@ def home(request: Request):
       
 
 @app.post("/predict", response_class=HTMLResponse)
-def predict(request: Request, resume_text: Optional[str] = Form(None)):
+def predict(request: Request, resume_text: Optional[str] = Form(None), file:UploadFile = File(None)):
+    
+    if file and file.filename:
+        extracted_text = extract_text_from_file(file)
+        if not extracted_text:
+            return templates.TemplateResponse("index.html", {
+                "request": request,
+                "error": "Unsupported file format"
+            })
+        resume_text = extracted_text
+
     if resume_text is None or not resume_text.strip():
         return templates.TemplateResponse(request, "index.html", {
             "request": request,
@@ -55,19 +61,17 @@ def predict(request: Request, resume_text: Optional[str] = Form(None)):
         })
     trimmed = trim_resume(cleaned)
 
-    # Vectorize
-    vectorized = vectorizer.transform([trimmed])
-
-    # Predict
-    prediction = model.predict(vectorized)[0]
-    confidence = max(model.predict_proba(vectorized)[0])
+    # prediction
+    prediction, confidence = predict_resume(trimmed)
 
     # job recommendations
     jobs = get_job_recommendations(prediction)
-
+    keywords = extract_keywords(resume_text)
+    
     return templates.TemplateResponse(request, "index.html", {
         "request": request,
         "prediction": prediction,
-        "confidence": f"{confidence*100:.2f}%",
-        "jobs": jobs
+        "confidence": f"{confidence}%",
+        "jobs": jobs,
+        "keywords": keywords
     })
